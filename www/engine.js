@@ -4,27 +4,23 @@ var br,cr,st,cas,ep,hm,fm,hist;
 
 function start(){
   br=new Array(64);cr=new Array(64);
+  // Фигуры: 0-7 чёрные, 8-15 чёрные пешки, 48-55 белые пешки, 56-63 белые
   var init = [
-    R,H,B,Q,K,B,H,R,
-    P,P,P,P,P,P,P,P,
-    N,N,N,N,N,N,N,N,
-    N,N,N,N,N,N,N,N,
-    N,N,N,N,N,N,N,N,
-    N,N,N,N,N,N,N,N,
-    P,P,P,P,P,P,P,P,
-    R,H,B,Q,K,B,H,R
+    R,H,B,Q,K,B,H,R,  // 0-7: чёрные фигуры
+    P,P,P,P,P,P,P,P,  // 8-15: чёрные пешки
+    N,N,N,N,N,N,N,N,  // 16-23
+    N,N,N,N,N,N,N,N,  // 24-31
+    N,N,N,N,N,N,N,N,  // 32-39
+    N,N,N,N,N,N,N,N,  // 40-47
+    P,P,P,P,P,P,P,P,  // 48-55: белые пешки
+    R,H,B,Q,K,B,H,R   // 56-63: белые фигуры
   ];
-  var icol = [
-    Bk,Bk,Bk,Bk,Bk,Bk,Bk,Bk,
-    Bk,Bk,Bk,Bk,Bk,Bk,Bk,Bk,
-    W,W,W,W,W,W,W,W,
-    W,W,W,W,W,W,W,W,
-    W,W,W,W,W,W,W,W,
-    W,W,W,W,W,W,W,W,
-    W,W,W,W,W,W,W,W,
-    W,W,W,W,W,W,W,W
-  ];
-  for(var i=0;i<64;i++){br[i]=init[i];cr[i]=icol[i];}
+  for(var i=0;i<64;i++){
+    br[i]=init[i];
+    if(i<16)cr[i]=Bk;       // ряды 0 и 1 — чёрные
+    else if(i>=48)cr[i]=W;  // ряды 6 и 7 — белые
+    else cr[i]=W;           // пустые — неважно, но пусть будет W
+  }
   st=W;cas=15;ep=-1;hm=0;fm=1;hist=[];
 }
 
