@@ -18,7 +18,7 @@ function start(){
     br[i]=init[i];
     if(i<16) cr[i]=Bk;        // чёрные
     else if(i>=48) cr[i]=W;   // белые
-    else cr[i]=W;
+    else cr[i]=W;             // пустые (неважно)
   }
   st=W;cas=15;ep=-1;hm=0;fm=1;hist=[];
 }
@@ -32,6 +32,7 @@ function gen(col){
   for(var s=0;s<64;s++){
     if(br[s]===N||cr[s]!==col)continue;
     var p=br[s];
+    // Пешка
     if(p===P){
       var fw=s+pd;
       if(on(fw)&&br[fw]===N){
@@ -55,12 +56,14 @@ function gen(col){
           }
         }
       }
+    // Конь
     }else if(p===H){
       var ko=[-17,-15,-10,-6,6,10,15,17];
       for(var ki=0;ki<8;ki++){
         var t=s+ko[ki];if(!on(t))continue;
         if(Math.abs(fl(t)-fl(s))<=2&&(br[t]===N||cr[t]===op))m.push({f:s,t:t});
       }
+    // Слон/Ладья/Ферзь
     }else if(p===B||p===R||p===Q){
       var dirs=p===B?[-9,-7,7,9]:p===R?[-8,8,-1,1]:[-9,-8,-7,-1,1,7,8,9];
       for(var di=0;di<dirs.length;di++){
@@ -72,6 +75,7 @@ function gen(col){
           t+=d;
         }
       }
+    // Король
     }else if(p===K){
       var kd=[-9,-8,-7,-1,1,7,8,9];
       for(var i=0;i<8;i++){

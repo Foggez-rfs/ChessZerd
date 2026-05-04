@@ -9,7 +9,7 @@
   --bg: #1e1e1e; --panel: #2a2a2a; --text: #eee; --accent: #c8a96e; --gold: #f1c40f;
   --cell-light: #f0d9b5; --cell-dark: #b58863;
 }
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin:0; padding:0; box-sizing:border-box; }
 body {
   background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif;
   display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden;
@@ -35,30 +35,23 @@ body {
 }
 .cell {
   display: flex; align-items: center; justify-content: center;
-  font-size: min(7vw, 38px); line-height: 1; user-select: none; position: relative;
-  cursor: pointer;
+  font-size: min(7vw, 38px); line-height: 1; user-select: none; position: relative; cursor: pointer;
 }
 .cell.light { background: var(--cell-light); }
 .cell.dark { background: var(--cell-dark); }
 
+.piece { font-weight: bold; }
+.piece.white { color: #ffffff; text-shadow: 1px 1px 0 #000000; }
+.piece.black { color: #1a1a1a; text-shadow: 1px 1px 0 #ffffff; }
+
 .cell.valid-move::after {
-  content: '';
-  position: absolute;
-  width: 14px; height: 14px;
-  background: rgba(0, 180, 0, 0.55);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 2;
+  content: ''; position: absolute; width: 14px; height: 14px;
+  background: rgba(0, 180, 0, 0.55); border-radius: 50%; pointer-events: none; z-index: 2;
 }
 .cell.valid-capture::after {
-  content: '';
-  position: absolute;
-  width: 86%; height: 86%;
-  border: 4px solid rgba(255, 70, 70, 0.75);
-  border-radius: 50%;
-  box-sizing: border-box;
-  pointer-events: none;
-  z-index: 2;
+  content: ''; position: absolute; width: 86%; height: 86%;
+  border: 4px solid rgba(255, 70, 70, 0.75); border-radius: 50%;
+  box-sizing: border-box; pointer-events: none; z-index: 2;
 }
 
 .control-bar { display: flex; gap: 8px; padding: 8px 0; justify-content: center; flex-wrap: wrap; }
@@ -69,22 +62,20 @@ button {
 .aizen-quote { font-style: italic; color: var(--gold); text-align: center; margin: 8px 0; }
 
 #tab-profile, #tab-settings { text-align: center; }
-.avatar-grid { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 10px 0; }
-.avatar-img {
-  width: 50px; height: 50px; border-radius: 50%; border: 3px solid transparent;
-  background-size: cover; cursor: pointer;
+.avatar-preview {
+  width: 80px; height: 80px; border-radius: 50%; background: #444 center/cover;
+  margin: 10px auto; border: 3px solid var(--accent);
 }
-.avatar-img.selected { border-color: var(--accent); }
+input[type="text"], input[type="file"] { margin: 8px 0; }
+input[type="text"] {
+  background: #333; color: #fff; border: 1px solid #555; padding: 8px; border-radius: 6px; width: 80%;
+}
+input[type="file"] { color: #fff; }
 .theme-selector { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 8px 0; }
 .theme-btn {
-  background: #444; color: white; padding: 6px 12px; border-radius: 20px;
-  border: none; cursor: pointer; font-size: 12px;
+  background: #444; color: white; padding: 6px 12px; border-radius: 20px; border: none; cursor: pointer; font-size: 12px;
 }
 .theme-btn.active { background: var(--accent); }
-input {
-  background: #333; color: #fff; border: 1px solid #555; padding: 8px;
-  border-radius: 6px; margin: 8px 0; width: 80%;
-}
 </style>
 </head>
 <body>
@@ -108,16 +99,16 @@ input {
     <h2 id="profile-greeting">Игрок</h2>
     <p>ELO: <span id="elo">1200</span></p>
     <p>Побед: <span id="wins">0</span> / Поражений: <span id="losses">0</span></p>
-    <input id="username-input" type="text" placeholder="Твой ник" maxlength="20">
+    <div id="avatar-preview" class="avatar-preview"></div>
+    <input type="file" id="avatar-upload" accept="image/*">
+    <br>
+    <input type="text" id="username-input" placeholder="Твой ник" maxlength="20">
     <br><button onclick="ChesszerdApp.saveProfile()">Сохранить</button>
-    <div class="avatar-grid" id="avatar-chooser"></div>
   </div>
 
   <div id="tab-settings" class="tab-content">
     <h3>Тема доски</h3>
     <div class="theme-selector" id="theme-selector"></div>
-    <h3>Стиль фигур</h3>
-    <div class="theme-selector" id="style-selector"></div>
   </div>
 </div>
 
