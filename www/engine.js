@@ -1,47 +1,42 @@
 (function(){
-'use strict';
 var N=0,P=1,H=2,B=3,R=4,Q=5,K=6,W=0,Bk=1;
+var br,cr,st,cas,ep,hm,fm,hist;
 
-// НАЧАЛЬНАЯ ПОЗИЦИЯ — КОНСТАНТА
-var START_BOARD = [
-  R, H, B, Q, K, B, H, R,
-  P, P, P, P, P, P, P, P,
-  N, N, N, N, N, N, N, N,
-  N, N, N, N, N, N, N, N,
-  N, N, N, N, N, N, N, N,
-  N, N, N, N, N, N, N, N,
-  P, P, P, P, P, P, P, P,
-  R, H, B, Q, K, B, H, R
-];
-var START_COLOR = [
-  Bk,Bk,Bk,Bk,Bk,Bk,Bk,Bk,
-  Bk,Bk,Bk,Bk,Bk,Bk,Bk,Bk,
-  W, W, W, W, W, W, W, W,
-  W, W, W, W, W, W, W, W,
-  W, W, W, W, W, W, W, W,
-  W, W, W, W, W, W, W, W,
-  W, W, W, W, W, W, W, W,
-  W, W, W, W, W, W, W, W
-];
-
-var br=[],cr=[],st=W,cas=15,ep=-1,hm=0,fm=1,hist=[];
-
-function initBoard(){
-  br=START_BOARD.slice();
-  cr=START_COLOR.slice();
+function start(){
+  br=new Array(64);cr=new Array(64);
+  var init = [
+    R,H,B,Q,K,B,H,R,
+    P,P,P,P,P,P,P,P,
+    N,N,N,N,N,N,N,N,
+    N,N,N,N,N,N,N,N,
+    N,N,N,N,N,N,N,N,
+    N,N,N,N,N,N,N,N,
+    P,P,P,P,P,P,P,P,
+    R,H,B,Q,K,B,H,R
+  ];
+  var icol = [
+    Bk,Bk,Bk,Bk,Bk,Bk,Bk,Bk,
+    Bk,Bk,Bk,Bk,Bk,Bk,Bk,Bk,
+    W,W,W,W,W,W,W,W,
+    W,W,W,W,W,W,W,W,
+    W,W,W,W,W,W,W,W,
+    W,W,W,W,W,W,W,W,
+    W,W,W,W,W,W,W,W,
+    W,W,W,W,W,W,W,W
+  ];
+  for(var i=0;i<64;i++){br[i]=init[i];cr[i]=icol[i];}
   st=W;cas=15;ep=-1;hm=0;fm=1;hist=[];
 }
 
-function on(sq){return sq>=0&&sq<64;}
-function fl(sq){return sq&7;}
-function rk(sq){return sq>>3;}
+function on(s){return s>=0&&s<64;}
+function fl(s){return s&7;}
+function rk(s){return s>>3;}
 
 function gen(col){
   var m=[],op=1-col,pd=col===W?-8:8,sr=col===W?6:1,pr=col===W?0:7;
   for(var s=0;s<64;s++){
     if(br[s]===N||cr[s]!==col)continue;
     var p=br[s];
-    // Пешка
     if(p===P){
       var fw=s+pd;
       if(on(fw)&&br[fw]===N){
@@ -53,58 +48,45 @@ function gen(col){
           if(rk(s)===sr&&on(db)&&br[db]===N)m.push({f:s,t:db});
         }
       }
-      for(var d=0;d<2;d++){
-        var cap=s+pd+(d===0?-1:1);
-        if(!on(cap))continue;
-        if(fl(cap)!==fl(s)-1&&fl(cap)!==fl(s)+1)continue;
-        if((br[cap]!==N&&cr[cap]===op)||cap===ep){
-          if(rk(cap)===pr){
-            m.push({f:s,t:cap,p:Q,ep:cap===ep});m.push({f:s,t:cap,p:R,ep:cap===ep});
-            m.push({f:s,t:cap,p:B,ep:cap===ep});m.push({f:s,t:cap,p:H,ep:cap===ep});
-          }else{
-            m.push({f:s,t:cap,ep:cap===ep});
+      var caps=[pd-1,pd+1];
+      for(var ci=0;ci<2;ci++){
+        var cs=s+caps[ci];if(!on(cs))continue;
+        if(fl(cs)===fl(s)-1||fl(cs)===fl(s)+1){
+          if((br[cs]!==N&&cr[cs]===op)||cs===ep){
+            if(rk(cs)===pr){
+              m.push({f:s,t:cs,p:Q,ep:cs===ep});m.push({f:s,t:cs,p:R,ep:cs===ep});
+              m.push({f:s,t:cs,p:B,ep:cs===ep});m.push({f:s,t:cs,p:H,ep:cs===ep});
+            }else{m.push({f:s,t:cs,ep:cs===ep});}
           }
         }
       }
-    }
-    // Конь
-    else if(p===H){
+    }else if(p===H){
       var ko=[-17,-15,-10,-6,6,10,15,17];
       for(var ki=0;ki<8;ki++){
-        var t=s+ko[ki];
-        if(!on(t))continue;
+        var t=s+ko[ki];if(!on(t))continue;
         if(Math.abs(fl(t)-fl(s))<=2&&(br[t]===N||cr[t]===op))m.push({f:s,t:t});
       }
-    }
-    // Слон/Ладья/Ферзь
-    else if(p===B||p===R||p===Q){
+    }else if(p===B||p===R||p===Q){
       var dirs=p===B?[-9,-7,7,9]:p===R?[-8,8,-1,1]:[-9,-8,-7,-1,1,7,8,9];
       for(var di=0;di<dirs.length;di++){
-        var dd=dirs[di],t=s+dd;
+        var d=dirs[di],t=s+d;
         while(on(t)){
-          if(p!==R&&Math.abs(fl(t)-fl(t-dd))>1)break;
-          if(br[t]===N){m.push({f:s,t:t});}
+          if(p!==R&&Math.abs(fl(t)-fl(t-d))>1)break;
+          if(br[t]===N)m.push({f:s,t:t});
           else{if(cr[t]===op)m.push({f:s,t:t});break;}
-          t+=dd;
+          t+=d;
         }
       }
-    }
-    // Король
-    else if(p===K){
+    }else if(p===K){
       var kd=[-9,-8,-7,-1,1,7,8,9];
       for(var i=0;i<8;i++){
-        var t=s+kd[i];
-        if(!on(t))continue;
+        var t=s+kd[i];if(!on(t))continue;
         if(Math.abs(fl(t)-fl(s))<=1&&(br[t]===N||cr[t]===op))m.push({f:s,t:t});
       }
-      if(col===W&&s===60){
-        if((cas&1)&&br[61]===N&&br[62]===N)m.push({f:60,t:62,cs:true});
-        if((cas&2)&&br[59]===N&&br[58]===N&&br[57]===N)m.push({f:60,t:58,cs:true});
-      }
-      if(col===Bk&&s===4){
-        if((cas&4)&&br[5]===N&&br[6]===N)m.push({f:4,t:6,cs:true});
-        if((cas&8)&&br[3]===N&&br[2]===N&&br[1]===N)m.push({f:4,t:2,cs:true});
-      }
+      if(col===W&&s===60&&(cas&1)&&br[61]===N&&br[62]===N)m.push({f:60,t:62,cs:true});
+      if(col===W&&s===60&&(cas&2)&&br[59]===N&&br[58]===N&&br[57]===N)m.push({f:60,t:58,cs:true});
+      if(col===Bk&&s===4&&(cas&4)&&br[5]===N&&br[6]===N)m.push({f:4,t:6,cs:true});
+      if(col===Bk&&s===4&&(cas&8)&&br[3]===N&&br[2]===N&&br[1]===N)m.push({f:4,t:2,cs:true});
     }
   }
   return m;
@@ -114,7 +96,7 @@ function move(mv){
   mv.pcas=cas;mv.pep=ep;mv.phm=hm;mv.cap=br[mv.t];
   br[mv.t]=br[mv.f];cr[mv.t]=cr[mv.f];br[mv.f]=N;
   if(mv.p)br[mv.t]=mv.p;
-  if(mv.ep){var cp=mv.t+(st===W?8:-8);br[cp]=N;cr[cp]=W;}
+  if(mv.ep){var cp=mv.t+(st===W?8:-8);br[cp]=N;}
   if(mv.cs){
     if(mv.t===62){br[61]=R;cr[61]=W;br[63]=N;}
     else if(mv.t===58){br[59]=R;cr[59]=W;br[56]=N;}
@@ -143,34 +125,34 @@ function unm(){
 }
 
 function ev(){
-  var val={1:100,2:320,3:330,4:500,5:900,6:20000},sc=0;
-  for(var i=0;i<64;i++)if(br[i]!==N)sc+=(cr[i]===W?1:-1)*val[br[i]];
-  return st===W?sc:-sc;
+  var val={1:100,2:320,3:330,4:500,5:900,6:20000},s=0;
+  for(var i=0;i<64;i++)if(br[i]!==N)s+=(cr[i]===W?1:-1)*val[br[i]];
+  return st===W?s:-s;
 }
 
-function ab(d,a,bt){
+function minmax(d,a,bt){
   if(d<=0)return ev();
   var ms=gen(st);
-  if(ms.length===0)return -99999;
+  if(!ms.length)return -99999;
   for(var i=0;i<ms.length;i++){
-    move(ms[i]);var sc=-ab(d-1,-bt,-a);unm();
+    move(ms[i]);var sc=-minmax(d-1,-bt,-a);unm();
     if(sc>=bt)return bt;
     if(sc>a)a=sc;
   }
   return a;
 }
 
-function best(d){
-  d=d||3;
-  var ms=gen(st);
-  if(!ms.length)return null;
+function best(){
+  var ms=gen(st);if(!ms.length)return null;
   var bm=ms[0],bs=-Infinity;
   for(var i=0;i<ms.length;i++){
-    move(ms[i]);var sc=-ab(d-1,-Infinity,-bs);unm();
+    move(ms[i]);var sc=-minmax(3,-Infinity,-bs);unm();
     if(sc>bs){bs=sc;bm=ms[i];}
   }
   return bm;
 }
+
+start();
 
 window.ChesszerdEngine={
   board:function(){return br;},
@@ -181,8 +163,7 @@ window.ChesszerdEngine={
   undoMove:unm,
   searchBestMove:best,
   gameHistory:function(){return hist;},
-  reset:initBoard,
+  reset:start,
   onPlayerWin:function(){}
 };
-initBoard();
 })();
