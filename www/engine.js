@@ -4,22 +4,21 @@ var br,cr,st,cas,ep,hm,fm,hist;
 
 function start(){
   br=new Array(64);cr=new Array(64);
-  // Фигуры: 0-7 чёрные, 8-15 чёрные пешки, 48-55 белые пешки, 56-63 белые
   var init = [
-    R,H,B,Q,K,B,H,R,  // 0-7: чёрные фигуры
-    P,P,P,P,P,P,P,P,  // 8-15: чёрные пешки
-    N,N,N,N,N,N,N,N,  // 16-23
-    N,N,N,N,N,N,N,N,  // 24-31
-    N,N,N,N,N,N,N,N,  // 32-39
-    N,N,N,N,N,N,N,N,  // 40-47
-    P,P,P,P,P,P,P,P,  // 48-55: белые пешки
-    R,H,B,Q,K,B,H,R   // 56-63: белые фигуры
+    R,H,B,Q,K,B,H,R,
+    P,P,P,P,P,P,P,P,
+    N,N,N,N,N,N,N,N,
+    N,N,N,N,N,N,N,N,
+    N,N,N,N,N,N,N,N,
+    N,N,N,N,N,N,N,N,
+    P,P,P,P,P,P,P,P,
+    R,H,B,Q,K,B,H,R
   ];
   for(var i=0;i<64;i++){
     br[i]=init[i];
-    if(i<16)cr[i]=Bk;       // ряды 0 и 1 — чёрные
-    else if(i>=48)cr[i]=W;  // ряды 6 и 7 — белые
-    else cr[i]=W;           // пустые — неважно, но пусть будет W
+    if(i<16) cr[i]=Bk;        // чёрные
+    else if(i>=48) cr[i]=W;   // белые
+    else cr[i]=W;
   }
   st=W;cas=15;ep=-1;hm=0;fm=1;hist=[];
 }
@@ -44,9 +43,9 @@ function gen(col){
           if(rk(s)===sr&&on(db)&&br[db]===N)m.push({f:s,t:db});
         }
       }
-      var caps=[pd-1,pd+1];
-      for(var ci=0;ci<2;ci++){
-        var cs=s+caps[ci];if(!on(cs))continue;
+      for(var d=0;d<2;d++){
+        var cs=s+pd+(d?-1:1);
+        if(!on(cs))continue;
         if(fl(cs)===fl(s)-1||fl(cs)===fl(s)+1){
           if((br[cs]!==N&&cr[cs]===op)||cs===ep){
             if(rk(cs)===pr){

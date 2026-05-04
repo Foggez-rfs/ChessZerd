@@ -1,17 +1,13 @@
 (function(){
 var E=window.ChesszerdEngine;
-var sel=-1,pc=0,ga=false,ac=null,th='wood';
-var highlights=[];
+var sel=-1,pc=0,ga=false,ac=null,highlights=[];
+var quotes=["Добро пожаловать.","Ты думаешь, что контролируешь доску?","Каждый твой ход ведёт к поражению.","Шахматы — отражение души.","Ты слаб.","Hogyoku эволюционирует.","Интересно... Ты сопротивляешься.","Твоя стратегия — пыль."];
+
+function rq(){return quotes[Math.floor(Math.random()*quotes.length)];}
 
 function be(f,d){
   if(!ac)return;
-  try{
-    var o=ac.createOscillator(),g=ac.createGain();
-    o.type='sine';o.frequency.value=f;g.gain.value=0.06;
-    o.connect(g);g.connect(ac.destination);o.start();
-    g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+(d||0.1));
-    setTimeout(function(){o.stop();},(d||0.1)*1000+50);
-  }catch(e){}
+  try{var o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f;g.gain.value=0.06;o.connect(g);g.connect(ac.destination);o.start();g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+(d||0.1));setTimeout(function(){o.stop();},(d||0.1)*1000+50);}catch(e){}
 }
 
 function sym(p,c){
@@ -21,9 +17,7 @@ function sym(p,c){
 
 function clearHighlights(){
   var cells=document.querySelectorAll('.cell');
-  for(var i=0;i<cells.length;i++){
-    cells[i].classList.remove('valid-move','valid-capture');
-  }
+  for(var i=0;i<cells.length;i++){cells[i].classList.remove('valid-move','valid-capture');}
   highlights=[];
 }
 
@@ -35,11 +29,8 @@ function showHighlights(sq){
     var t=ms[i].to;
     for(var j=0;j<cells.length;j++){
       if(parseInt(cells[j].dataset.sq)===t){
-        if(E.board()[t]!==0||ms[i].ep){
-          cells[j].classList.add('valid-capture');
-        }else{
-          cells[j].classList.add('valid-move');
-        }
+        if(E.board()[t]!==0||ms[i].ep){cells[j].classList.add('valid-capture');}
+        else{cells[j].classList.add('valid-move');}
         highlights.push(t);
       }
     }
@@ -66,6 +57,7 @@ function rb(){
       el.appendChild(cell);
     }
   }
+  document.getElementById('aizen-quote').textContent=rq();
 }
 
 function cl(sq){
@@ -89,30 +81,28 @@ function cl(sq){
       }
     }else{
       clearHighlights();
-      if(E.board()[sq]!==0&&E.pieceColorAt(sq)===pc){
-        sel=sq;showHighlights(sq);rb();
-      }else{sel=-1;rb();}
+      if(E.board()[sq]!==0&&E.pieceColorAt(sq)===pc){sel=sq;showHighlights(sq);rb();}
+      else{sel=-1;rb();}
     }
   }
 }
 
 function ai(){
+  if(!ga)return;
   var bm=E.searchBestMove();
-  if(bm){E.makeMove(bm);be(400,0.1);rb();}
+  if(bm){E.makeMove(bm);be(400,0.1);clearHighlights();rb();}
 }
 
 function undo(){
   if(!ga||E.sideToMove()===pc)return;
   var h=E.gameHistory();if(!h.length)return;
-  E.undoMove();
-  if(h.length>1&&E.sideToMove()!==pc)E.undoMove();
+  E.undoMove();if(h.length>1&&E.sideToMove()!==pc)E.undoMove();
   sel=-1;clearHighlights();rb();
 }
 
 function swT(id){
-  var tabs=document.querySelectorAll('.tab-content');
-  for(var i=0;i<tabs.length;i++)tabs[i].style.display='none';
-  var t=document.getElementById(id);if(t)t.style.display='block';
+  document.querySelectorAll('.tab-content').forEach(function(e){e.style.display='none';});
+  document.getElementById(id).style.display='block';
 }
 
 function init(){
