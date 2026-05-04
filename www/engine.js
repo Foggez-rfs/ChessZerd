@@ -1,7 +1,6 @@
 (function(){
 var N=0,P=1,H=2,B=3,R=4,Q=5,K=6,W=0,Bk=1;
 var br,cr,st,cas,ep,hm,fm,hist;
-
 function start(){
   br=new Array(64);cr=new Array(64);
   var init = [
@@ -16,23 +15,18 @@ function start(){
   ];
   for(var i=0;i<64;i++){
     br[i]=init[i];
-    if(i<16) cr[i]=Bk;        // чёрные
-    else if(i>=48) cr[i]=W;   // белые
-    else cr[i]=W;             // пустые (неважно)
+    if(i<16)cr[i]=Bk;else if(i>=48)cr[i]=W;else cr[i]=W;
   }
   st=W;cas=15;ep=-1;hm=0;fm=1;hist=[];
 }
-
 function on(s){return s>=0&&s<64;}
 function fl(s){return s&7;}
 function rk(s){return s>>3;}
-
 function gen(col){
   var m=[],op=1-col,pd=col===W?-8:8,sr=col===W?6:1,pr=col===W?0:7;
   for(var s=0;s<64;s++){
     if(br[s]===N||cr[s]!==col)continue;
     var p=br[s];
-    // Пешка
     if(p===P){
       var fw=s+pd;
       if(on(fw)&&br[fw]===N){
@@ -56,14 +50,12 @@ function gen(col){
           }
         }
       }
-    // Конь
     }else if(p===H){
       var ko=[-17,-15,-10,-6,6,10,15,17];
       for(var ki=0;ki<8;ki++){
         var t=s+ko[ki];if(!on(t))continue;
         if(Math.abs(fl(t)-fl(s))<=2&&(br[t]===N||cr[t]===op))m.push({f:s,t:t});
       }
-    // Слон/Ладья/Ферзь
     }else if(p===B||p===R||p===Q){
       var dirs=p===B?[-9,-7,7,9]:p===R?[-8,8,-1,1]:[-9,-8,-7,-1,1,7,8,9];
       for(var di=0;di<dirs.length;di++){
@@ -75,7 +67,6 @@ function gen(col){
           t+=d;
         }
       }
-    // Король
     }else if(p===K){
       var kd=[-9,-8,-7,-1,1,7,8,9];
       for(var i=0;i<8;i++){
@@ -90,7 +81,6 @@ function gen(col){
   }
   return m;
 }
-
 function move(mv){
   mv.pcas=cas;mv.pep=ep;mv.phm=hm;mv.cap=br[mv.t];
   br[mv.t]=br[mv.f];cr[mv.t]=cr[mv.f];br[mv.f]=N;
@@ -107,7 +97,6 @@ function move(mv){
   hm=(br[mv.t]===P||mv.cap!==N)?0:hm+1;
   st=1-st;if(st===W)fm++;hist.push(mv);
 }
-
 function unm(){
   if(!hist.length)return;
   var mv=hist.pop();
@@ -122,13 +111,11 @@ function unm(){
   }
   cas=mv.pcas;ep=mv.pep;hm=mv.phm;st=1-st;if(st===W)fm--;
 }
-
 function ev(){
   var val={1:100,2:320,3:330,4:500,5:900,6:20000},s=0;
   for(var i=0;i<64;i++)if(br[i]!==N)s+=(cr[i]===W?1:-1)*val[br[i]];
   return st===W?s:-s;
 }
-
 function minmax(d,a,bt){
   if(d<=0)return ev();
   var ms=gen(st);
@@ -140,7 +127,6 @@ function minmax(d,a,bt){
   }
   return a;
 }
-
 function best(){
   var ms=gen(st);if(!ms.length)return null;
   var bm=ms[0],bs=-Infinity;
@@ -150,9 +136,7 @@ function best(){
   }
   return bm;
 }
-
 start();
-
 window.ChesszerdEngine={
   board:function(){return br;},
   pieceColorAt:function(sq){return cr[sq];},
