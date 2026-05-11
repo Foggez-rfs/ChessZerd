@@ -59,7 +59,7 @@
         }
         .square.light { background-color: var(--light-square); }
         .square.dark { background-color: var(--dark-square); }
-        .square.selected { background-color: rgba(255,215,0,0.5) !important; }
+        .square.selected { background-color: rgba(255, 215, 0, 0.5) !important; }
         .square.valid-move::after {
             content: ''; position: absolute; width: 30%; height: 30%;
             background: var(--valid-move); border-radius: 50%;
@@ -126,6 +126,17 @@
     </style>
 </head>
 <body>
+    <!-- Приветственный экран -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-portrait">
+            <img src="portrait.jpg" alt="Aizen" width="150" height="150">
+        </div>
+        <div class="welcome-text">
+            <div>Chesszerd</div>
+            <div style="font-size: 0.7em; margin-top: 10px;">Сосуке Айзен ждёт вас</div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="header">
             <h1>♔ Chesszerd ♚</h1>
@@ -191,7 +202,7 @@
         </div>
     </div>
 
-    <!-- Только необходимые модули -->
+    <!-- Подключаем модули в правильном порядке -->
     <script src="../core/bitboard/bitboard_core.js"></script>
     <script src="../core/movegen/pawn_moves.js"></script>
     <script src="../core/movegen/knight_moves.js"></script>
@@ -201,6 +212,17 @@
     <script src="../core/rules/move_validator.js"></script>
     <script src="../core/state/board_state.js"></script>
     <script src="../core/state/game_state.js"></script>
+
+    <!-- Модули нейросети (без них поиск будет использовать заглушку) -->
+    <script src="../brain/nn/nn_core.js"></script>
+    <script src="../brain/nn/nn_layers.js"></script>
+    <script src="../brain/inference/board_encoder.js"></script>
+    <script src="../brain/inference/position_evaluator.js"></script>
+
+    <!-- Поиск -->
+    <script src="../search/ordering/move_ordering.js"></script>
+    <script src="../search/ordering/killer_moves.js"></script>
+    <script src="../search/ordering/history_heuristic.js"></script>
     <script src="engine.js"></script>
     <script src="app.js"></script>
 </body>

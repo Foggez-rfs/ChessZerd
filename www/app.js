@@ -1,10 +1,10 @@
+// app.js – основной интерфейс
 (function() {
     'use strict';
 
     const State = window.BoardState;
     const Game = window.GameState;
     const Validator = window.MoveValidator;
-    const B = window.BitboardCore;
 
     let selectedPiece = -1;
     let validMoves = [];
@@ -14,14 +14,15 @@
     let currentStyle = 'neo';
     let language = 'ru';
     let playerName = 'Игрок';
-    let playerAvatar = 0;
     let playerElo = 1200;
     let wins = 0, losses = 0, draws = 0;
 
     const AIZEN_QUOTES = {
-        ru: ["Добро пожаловать в мой мир. Здесь я устанавливаю правила.","Твои ходы предсказуемы.","Каждая твоя ошибка делает меня сильнее."],
-        en: ["Welcome to my world.","Your moves are predictable.","Every mistake you make strengthens me."]
+        ru: ["Добро пожаловать в мой мир. Здесь я устанавливаю правила.","Твои ходы предсказуемы. Но продолжай, это забавно.","Шахматы — это не игра. Это отражение души.","Ты думаешь, что контролируешь доску? Интересно.","Каждая твоя ошибка делает меня сильнее.","Я вижу твой следующий ход. И следующий за ним.","Ты уже проиграл, просто ещё не осознал этого.","Моя сила — не в расчётах, а в понимании."],
+        en: ["Welcome to my world. I set the rules here.","Your moves are predictable. But continue, it's amusing.","Chess is not a game. It's a reflection of the soul.","You think you control the board? Interesting.","Every mistake you make strengthens me.","I see your next move. And the one after that.","You've already lost, you just haven't realized it yet.","My strength is not in calculation, but in understanding."]
     };
+
+    function qs(id) { return document.getElementById(id); }
 
     function init() {
         loadProfile();
@@ -30,7 +31,14 @@
         loadLanguage();
         setupBoard();
         setupEventListeners();
-        showWelcome();
+        // Приветственный экран исчезает через 2 секунды
+        const welcome = qs('welcomeScreen');
+        if (welcome) {
+            setTimeout(() => {
+                welcome.style.opacity = '0';
+                setTimeout(() => { if (welcome.parentNode) welcome.parentNode.removeChild(welcome); }, 1000);
+            }, 2000);
+        }
         startNewGame();
     }
 
@@ -39,16 +47,22 @@
         playerName = p.name || 'Игрок';
         playerElo = p.elo || 1200;
         wins = p.wins || 0; losses = p.losses || 0; draws = p.draws || 0;
-        document.getElementById('playerName').value = playerName;
-        document.getElementById('playerElo').textContent = playerElo;
-        document.getElementById('playerWins').textContent = wins;
-        document.getElementById('playerLosses').textContent = losses;
-        document.getElementById('playerDraws').textContent = draws;
+
+        const nameInput = qs('playerName');
+        if (nameInput) nameInput.value = playerName;
+        const eloEl = qs('playerElo');
+        if (eloEl) eloEl.textContent = playerElo;
+        const wEl = qs('playerWins');
+        if (wEl) wEl.textContent = wins;
+        const lEl = qs('playerLosses');
+        if (lEl) lEl.textContent = losses;
+        const dEl = qs('playerDraws');
+        if (dEl) dEl.textContent = draws;
     }
 
     function saveProfile() {
         localStorage.setItem('chesszerd_profile', JSON.stringify({
-            name: playerName, avatar: playerAvatar, elo: playerElo, wins, losses, draws
+            name: playerName, elo: playerElo, wins, losses, draws
         }));
     }
 
@@ -71,7 +85,8 @@
     }
 
     function setupBoard() {
-        const boardEl = document.getElementById('board');
+        const boardEl = qs('board');
+        if (!boardEl) return;
         boardEl.innerHTML = '';
         for (let i = 0; i < 64; i++) {
             const sq = document.createElement('div');
@@ -115,7 +130,6 @@
                 selectedPiece = index;
                 validMoves = Validator.getLegalMoves(State.getState(), index);
                 updateBoard();
-                playSelectSound();
             }
         } else if (index === selectedPiece) {
             selectedPiece = -1; validMoves = []; updateBoard();
@@ -126,7 +140,6 @@
             selectedPiece = index;
             validMoves = Validator.getLegalMoves(State.getState(), index);
             updateBoard();
-            playSelectSound();
         }
     }
 
@@ -142,7 +155,6 @@
         if (move.promotion) State.getBoard()[move.to] = move.promotion;
         selectedPiece = -1; validMoves = [];
         updateBoard();
-        playMoveSound();
         Game.updateResult(State);
         if (Game.isGameOver()) { handleGameEnd(); return; }
         setTimeout(makeAIMove, 400);
@@ -161,7 +173,6 @@
         State.makeMove(best);
         if (best.promotion) State.getBoard()[best.to] = best.promotion;
         updateBoard();
-        playMoveSound();
         Game.updateResult(State);
         if (Game.isGameOver()) handleGameEnd();
     }
@@ -169,10 +180,13 @@
     function handleGameEnd() {
         gameActive = false;
         const result = Game.getResult();
+        let record = 'draw';
         if (result === '1-0') {
-            if (playerColor === 0) { wins++; playerElo += 20; } else { losses++; playerElo -= 20; }
+            if (playerColor === 0) { wins++; playerElo += 20; record = 'win'; }
+            else { losses++; playerElo -= 20; record = 'loss'; }
         } else if (result === '0-1') {
-            if (playerColor === 1) { wins++; playerElo += 20; } else { losses++; playerElo -= 20; }
+            if (playerColor === 1) { wins++; playerElo += 20; record = 'win'; }
+            else { losses++; playerElo -= 20; record = 'loss'; }
         } else { draws++; }
         playerElo = Math.max(100, playerElo);
         saveProfile(); loadProfile();
@@ -214,76 +228,95 @@
     }
 
     function applyStyle() {
-        const boardEl = document.getElementById('board');
+        const boardEl = qs('board');
+        if (!boardEl) return;
         boardEl.classList.remove('style-neo','style-standard','style-minimal');
         boardEl.classList.add('style-' + currentStyle);
         updateBoard();
     }
 
     function setupEventListeners() {
-        document.getElementById('newGameBtn').addEventListener('click', startNewGame);
-        document.getElementById('undoBtn').addEventListener('click', undoLastMove);
-        document.getElementById('flipBtn').addEventListener('click', () => {
-            document.getElementById('board').classList.toggle('flipped');
+        const newBtn = qs('newGameBtn');
+        if (newBtn) newBtn.addEventListener('click', startNewGame);
+        const undoBtn = qs('undoBtn');
+        if (undoBtn) undoBtn.addEventListener('click', undoLastMove);
+        const flipBtn = qs('flipBtn');
+        if (flipBtn) flipBtn.addEventListener('click', () => {
+            const board = qs('board');
+            if (board) board.classList.toggle('flipped');
         });
-        document.getElementById('saveProfileBtn').addEventListener('click', () => {
-            playerName = document.getElementById('playerName').value.trim() || 'Игрок';
+        const saveBtn = qs('saveProfileBtn');
+        if (saveBtn) saveBtn.addEventListener('click', () => {
+            const input = qs('playerName');
+            if (input) playerName = input.value.trim() || 'Игрок';
             saveProfile(); loadProfile();
             alert(language === 'ru' ? 'Профиль сохранён!' : 'Profile saved!');
         });
+
         document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', function() {
             document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(x => x.classList.add('hidden'));
             this.classList.add('active');
-            document.getElementById(this.dataset.tab + 'Tab').classList.remove('hidden');
+            const tab = document.getElementById(this.dataset.tab + 'Tab');
+            if (tab) tab.classList.remove('hidden');
         }));
+
         document.querySelectorAll('.theme-btn').forEach(b => b.addEventListener('click', function() {
-            currentTheme = this.dataset.theme; localStorage.setItem('chesszerd_theme', currentTheme); loadTheme();
+            currentTheme = this.dataset.theme;
+            localStorage.setItem('chesszerd_theme', currentTheme);
+            loadTheme();
         }));
         document.querySelectorAll('.style-btn').forEach(b => b.addEventListener('click', function() {
-            currentStyle = this.dataset.styleName; localStorage.setItem('chesszerd_style', currentStyle); loadStyle();
+            currentStyle = this.dataset.styleName;
+            localStorage.setItem('chesszerd_style', currentStyle);
+            loadStyle();
         }));
         document.querySelectorAll('.lang-btn').forEach(b => b.addEventListener('click', function() {
-            language = this.dataset.lang; localStorage.setItem('chesszerd_lang', language); loadLanguage();
+            language = this.dataset.lang;
+            localStorage.setItem('chesszerd_lang', language);
+            loadLanguage();
         }));
     }
 
     function updateUILanguage() {
         const t = {
-            ru: { newGame: 'Новая игра', undo: 'Отменить', flip: 'Перевернуть', save: 'Сохранить' },
-            en: { newGame: 'New Game', undo: 'Undo', flip: 'Flip', save: 'Save' }
+            ru: { newGame: 'Новая игра', undo: 'Отменить', flip: 'Перевернуть', save: 'Сохранить', game: 'Игра', profile: 'Профиль', style: 'Стиль', yourMove: 'Ваш ход', aiMove: 'Ход Сосуке Айзена...', draw: 'Ничья!', youWin: 'Вы победили!', aiWin: 'Айзен победил!' },
+            en: { newGame: 'New Game', undo: 'Undo', flip: 'Flip', save: 'Save', game: 'Game', profile: 'Profile', style: 'Style', yourMove: 'Your move', aiMove: 'Sosuke Aizen\'s move...', draw: 'Draw!', youWin: 'You won!', aiWin: 'Aizen won!' }
         }[language];
-        document.getElementById('newGameBtn').textContent = t.newGame;
-        document.getElementById('undoBtn').textContent = t.undo;
-        document.getElementById('flipBtn').textContent = t.flip;
-        document.getElementById('saveProfileBtn').textContent = t.save;
+        const newBtn = qs('newGameBtn'), undoBtn = qs('undoBtn'), flipBtn = qs('flipBtn'), saveBtn = qs('saveProfileBtn');
+        if (newBtn) newBtn.textContent = t.newGame;
+        if (undoBtn) undoBtn.textContent = t.undo;
+        if (flipBtn) flipBtn.textContent = t.flip;
+        if (saveBtn) saveBtn.textContent = t.save;
+        document.querySelectorAll('.tab-btn')[0].textContent = t.game;
+        document.querySelectorAll('.tab-btn')[1].textContent = t.profile;
+        document.querySelectorAll('.tab-btn')[2].textContent = t.style;
         updateStatus();
     }
 
     function updateStatus() {
-        const st = document.getElementById('status');
+        const st = qs('status');
+        if (!st) return;
+        const t = {
+            ru: { yourMove: 'Ваш ход', aiMove: 'Ход Сосуке Айзена...', draw: 'Ничья!', youWin: 'Вы победили!', aiWin: 'Айзен победил!' },
+            en: { yourMove: 'Your move', aiMove: 'Sosuke Aizen\'s move...', draw: 'Draw!', youWin: 'You won!', aiWin: 'Aizen won!' }
+        }[language];
         if (!Game.isGameOver()) {
-            st.textContent = State.getActiveColor() === playerColor ? (language === 'ru' ? 'Ваш ход' : 'Your move') : (language === 'ru' ? 'Ход Сосуке Айзена...' : 'Sosuke Aizen\'s move...');
+            st.textContent = State.getActiveColor() === playerColor ? t.yourMove : t.aiMove;
         } else {
             const res = Game.getResult();
-            if (res === '1/2-1/2') st.textContent = language === 'ru' ? 'Ничья!' : 'Draw!';
-            else if ((res === '1-0' && playerColor === 0) || (res === '0-1' && playerColor === 1)) st.textContent = language === 'ru' ? 'Вы победили!' : 'You won!';
-            else st.textContent = language === 'ru' ? 'Айзен победил!' : 'Aizen won!';
+            if (res === '1/2-1/2') st.textContent = t.draw;
+            else if ((res === '1-0' && playerColor === 0) || (res === '0-1' && playerColor === 1)) st.textContent = t.youWin;
+            else st.textContent = t.aiWin;
         }
     }
 
     function showRandomQuote() {
-        const quotes = AIZEN_QUOTES[language];
-        document.getElementById('aizenQuote').textContent = quotes[Math.floor(Math.random() * quotes.length)];
+        const quoteEl = qs('aizenQuote');
+        if (!quoteEl) return;
+        const quotes = AIZEN_QUOTES[language] || AIZEN_QUOTES.ru;
+        quoteEl.textContent = quotes[Math.floor(Math.random() * quotes.length)];
     }
-
-    function showWelcome() {
-        const w = document.getElementById('welcomeScreen');
-        if (w) { setTimeout(() => { w.style.opacity = '0'; setTimeout(() => w.remove(), 1000); }, 2000); }
-    }
-
-    function playMoveSound() { try { const a=new (window.AudioContext||window.webkitAudioContext)(); const o=a.createOscillator(); const g=a.createGain(); o.connect(g); g.connect(a.destination); o.frequency.value=800; o.type='sine'; g.gain.value=0.1; o.start(); g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.1); o.stop(a.currentTime+0.1); } catch(e){} }
-    function playSelectSound() { try { const a=new (window.AudioContext||window.webkitAudioContext)(); const o=a.createOscillator(); const g=a.createGain(); o.connect(g); g.connect(a.destination); o.frequency.value=600; o.type='sine'; g.gain.value=0.05; o.start(); g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.05); o.stop(a.currentTime+0.05); } catch(e){} }
 
     window.addEventListener('DOMContentLoaded', init);
 })();
