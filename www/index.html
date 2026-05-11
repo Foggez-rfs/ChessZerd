@@ -23,9 +23,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
+            background: var(--bg); color: var(--text); min-height: 100vh;
             display: flex; flex-direction: column; align-items: center;
             overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
@@ -128,16 +126,6 @@
     </style>
 </head>
 <body>
-    <div class="welcome-screen" id="welcomeScreen">
-        <div class="welcome-portrait">
-            <img src="portrait.jpg" alt="Aizen" width="150" height="150">
-        </div>
-        <div class="welcome-text">
-            <div>Chesszerd</div>
-            <div style="font-size: 0.7em; margin-top: 10px;">Сосуке Айзен ждёт вас</div>
-        </div>
-    </div>
-
     <div class="container">
         <div class="header">
             <h1>♔ Chesszerd ♚</h1>
@@ -203,7 +191,8 @@
         </div>
     </div>
 
-    <!-- Подключаем модули ядра -->
+    <!-- ПОДКЛЮЧАЕМ ВСЕ МОДУЛИ В ПРАВИЛЬНОМ ПОРЯДКЕ -->
+    <!-- Core -->
     <script src="../core/bitboard/bitboard_core.js"></script>
     <script src="../core/movegen/pawn_moves.js"></script>
     <script src="../core/movegen/knight_moves.js"></script>
@@ -213,11 +202,84 @@
     <script src="../core/rules/check_detector.js"></script>
     <script src="../core/rules/move_validator.js"></script>
     <script src="../core/rules/draw_detector.js"></script>
+    <script src="../core/rules/castling.js"></script>
+    <script src="../core/rules/en_passant.js"></script>
+    <script src="../core/rules/promotion.js"></script>
     <script src="../core/state/board_state.js"></script>
     <script src="../core/state/game_state.js"></script>
-    <script src="../core/notation/fen_parser.js"></script>
+    <script src="../core/state/game_clock.js"></script>
+    <script src="../core/state/game_result.js"></script>
     <script src="../core/notation/algebraic.js"></script>
-    <!-- Инициализация движка и UI -->
+    <script src="../core/notation/fen_parser.js"></script>
+    <script src="../core/hash/transposition_table.js"></script>
+
+    <!-- Brain -->
+    <script src="../brain/nn/nn_core.js"></script>
+    <script src="../brain/nn/nn_layers.js"></script>
+    <script src="../brain/nn/nn_training.js"></script>
+    <script src="../brain/nn/nn_weights.js"></script>
+    <script src="../brain/inference/board_encoder.js"></script>
+    <script src="../brain/inference/position_evaluator.js"></script>
+    <script src="../brain/inference/score_calculator.js"></script>
+    <script src="../brain/opening/opening_book.js"></script>
+    <script src="../brain/endgame/endgame_tables.js"></script>
+    <script src="../brain/tactics/mate_finder.js"></script>
+
+    <!-- Search -->
+    <script src="../search/ordering/killer_moves.js"></script>
+    <script src="../search/ordering/history_heuristic.js"></script>
+    <script src="../search/ordering/counter_moves.js"></script>
+    <script src="../search/ordering/move_ordering.js"></script>
+    <script src="../search/quiescence/see.js"></script>
+    <script src="../search/quiescence/capture_filter.js"></script>
+    <script src="../search/quiescence/quiescence_search.js"></script>
+    <script src="../search/pruning/null_move.js"></script>
+    <script src="../search/pruning/futility.js"></script>
+    <script src="../search/pruning/razoring.js"></script>
+    <script src="../search/pruning/late_move.js"></script>
+    <script src="../search/extensions/check_extension.js"></script>
+    <script src="../search/extensions/recapture.js"></script>
+    <script src="../search/extensions/pawn_push.js"></script>
+    <script src="../search/iterative/time_manager.js"></script>
+    <script src="../search/iterative/aspiration.js"></script>
+    <script src="../search/tree/alpha_beta.js"></script>
+    <script src="../search/iterative/iterative_deepening.js"></script>
+
+    <!-- UI -->
+    <script src="../ui/board/theme_manager.js"></script>
+    <script src="../ui/board/board_renderer.js"></script>
+    <script src="../ui/board/piece_renderer.js"></script>
+    <script src="../ui/interaction/touch_handler.js"></script>
+    <script src="../ui/interaction/click_effects.js"></script>
+    <script src="../ui/interaction/move_preview.js"></script>
+    <script src="../ui/panels/welcome_screen.js"></script>
+    <script src="../ui/widgets/tab_bar.js"></script>
+    <script src="../ui/aizen/aizen_personality.js"></script>
+    <script src="../ui/aizen/aizen_voice.js"></script>
+
+    <!-- Features -->
+    <script src="../features/profile/player_profile.js"></script>
+    <script src="../features/profile/elo_rating.js"></script>
+    <script src="../features/profile/rank_system.js"></script>
+    <script src="../features/customization/language_manager.js"></script>
+
+    <!-- Infra -->
+    <script src="../infra/events/event_bus.js"></script>
+    <script src="../infra/events/game_events.js"></script>
+    <script src="../infra/events/ui_events.js"></script>
+    <script src="../infra/i18n/translation_manager.js"></script>
+
+    <!-- Data -->
+    <script src="../data/openings/eco_a.js"></script>
+    <script src="../data/openings/eco_b.js"></script>
+    <script src="../data/openings/eco_c.js"></script>
+    <script src="../data/openings/eco_d.js"></script>
+    <script src="../data/openings/eco_e.js"></script>
+    <script src="../data/openings/opening_loader.js"></script>
+    <script src="../data/translations/ru.js"></script>
+    <script src="../data/translations/en.js"></script>
+
+    <!-- Игровая логика -->
     <script src="engine.js"></script>
     <script src="app.js"></script>
 </body>
