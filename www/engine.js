@@ -1,8 +1,7 @@
 // engine.js - Шахматный движок Chesszerd
 window.ChessEngine = (function() {
     'use strict';
-    
-    // Константы доски - жёстко заданная стартовая позиция
+
     const INITIAL_BOARD = [
         '♜','♞','♝','♛','♚','♝','♞','♜',
         '♟','♟','♟','♟','♟','♟','♟','♟',
@@ -13,7 +12,7 @@ window.ChessEngine = (function() {
         '♙','♙','♙','♙','♙','♙','♙','♙',
         '♖','♘','♗','♕','♔','♗','♘','♖'
     ];
-    
+
     const INITIAL_COLORS = [
         1,1,1,1,1,1,1,1,
         1,1,1,1,1,1,1,1,
@@ -24,14 +23,12 @@ window.ChessEngine = (function() {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0
     ];
-    
-    // Значения фигур
+
     const PIECE_VALUES = {
         '♔': 20000, '♕': 900, '♖': 500, '♗': 330, '♘': 320, '♙': 100,
         '♚': 20000, '♛': 900, '♜': 500, '♝': 330, '♞': 320, '♟': 100
     };
-    
-    // Таблицы позиционных весов
+
     const PAWN_TABLE = [
         0,0,0,0,0,0,0,0,
         50,50,50,50,50,50,50,50,
@@ -42,29 +39,17 @@ window.ChessEngine = (function() {
         5,10,10,-20,-20,10,10,5,
         0,0,0,0,0,0,0,0
     ];
-    
+
     class ChessEngine {
         constructor() {
-            this.board = [...INITIAL_BOARD];
-            this.colors = [...INITIAL_COLORS];
-            this.currentPlayer = 0; // 0 - белые, 1 - чёрные
-            this.moveHistory = [];
-            this.capturedPieces = [];
-            this.kingMoved = [false, false];
-            this.rookMoved = [false, false, false, false]; // a-rook, h-rook для белых и чёрных
-            this.enPassantTarget = -1;
-            this.fiftyMoveCounter = 0;
-            this.positionHistory = {};
-            this.gameOver = false;
-            this.result = '';
+            this.reset();
         }
-        
+
         reset() {
             this.board = [...INITIAL_BOARD];
             this.colors = [...INITIAL_COLORS];
             this.currentPlayer = 0;
             this.moveHistory = [];
-            this.capturedPieces = [];
             this.kingMoved = [false, false];
             this.rookMoved = [false, false, false, false];
             this.enPassantTarget = -1;
@@ -73,613 +58,384 @@ window.ChessEngine = (function() {
             this.gameOver = false;
             this.result = '';
         }
-        
-        getPieceAt(index) {
-            return this.board[index] || '';
-        }
-        
-        getColorAt(index) {
-            return this.colors[index] || 0;
-        }
-        
-        isWhitePiece(piece) {
-            return piece && '♔♕♖♗♘♙'.indexOf(piece) >= 0;
-        }
-        
-        isBlackPiece(piece) {
-            return piece && '♚♛♜♝♞♟'.indexOf(piece) >= 0;
-        }
-        
+
+        getPieceAt(index) { return this.board[index] || ''; }
+        getColorAt(index) { return this.colors[index] || 0; }
+
+        isWhitePiece(p) { return p && '♔♕♖♗♘♙'.includes(p); }
+        isBlackPiece(p) { return p && '♚♛♜♝♞♟'.includes(p); }
+
         getValidMoves(index) {
             const moves = [];
             const piece = this.board[index];
-            if (!piece) return moves;
-            
-            const color = this.colors[index];
-            if (color !== this.currentPlayer) return moves;
-            
+            if (!piece || this.colors[index] !== this.currentPlayer) return moves;
+
             const row = Math.floor(index / 8);
             const col = index % 8;
-            
+            const color = this.colors[index];
+
+            const addMove = (to, extra={}) => {
+                moves.push({from: index, to, ...extra});
+            };
+
+            const canMove = (to) => {
+                if (to < 0 || to >= 64) return false;
+                const tRow = Math.floor(to/8), tCol = to%8;
+                // Проверка для фигур с ограничением по направлению
+                return true;
+            };
+
             switch(piece) {
-                case '♙': // Белая пешка
-                    if (row > 0 && this.board[index-8] === '') {
-                        moves.push({from: index, to: index-8});
-                        if (row === 6 && this.board[index-16] === '') {
-                            moves.push({from: index, to: index-16});
-                        }
+                case '♙':
+                    if (index-8 >= 0 && this.board[index-8] === '') {
+                        addMove(index-8);
+                        if (row === 6 && this.board[index-16] === '') addMove(index-16);
                     }
-                    if (row > 0 && col > 0 && this.colors[index-9] === 1) {
-                        moves.push({from: index, to: index-9, capture: true});
-                    }
-                    if (row > 0 && col < 7 && this.colors[index-7] === 1) {
-                        moves.push({from: index, to: index-7, capture: true});
-                    }
-                    if (this.enPassantTarget >= 0) {
-                        const epRow = Math.floor(this.enPassantTarget / 8);
-                        const epCol = this.enPassantTarget % 8;
-                        if (row === 3 && Math.abs(col - epCol) === 1 && epRow === 2) {
-                            moves.push({from: index, to: this.enPassantTarget, enPassant: true});
-                        }
-                    }
+                    if (col>0 && index-9>=0 && this.colors[index-9]===1) addMove(index-9, {capture:true});
+                    if (col<7 && index-7>=0 && this.colors[index-7]===1) addMove(index-7, {capture:true});
                     break;
-                    
-                case '♟': // Чёрная пешка
-                    if (row < 7 && this.board[index+8] === '') {
-                        moves.push({from: index, to: index+8});
-                        if (row === 1 && this.board[index+16] === '') {
-                            moves.push({from: index, to: index+16});
-                        }
+                case '♟':
+                    if (index+8 < 64 && this.board[index+8] === '') {
+                        addMove(index+8);
+                        if (row === 1 && this.board[index+16] === '') addMove(index+16);
                     }
-                    if (row < 7 && col > 0 && this.colors[index+7] === 0) {
-                        moves.push({from: index, to: index+7, capture: true});
-                    }
-                    if (row < 7 && col < 7 && this.colors[index+9] === 0) {
-                        moves.push({from: index, to: index+9, capture: true});
-                    }
-                    if (this.enPassantTarget >= 0) {
-                        const epRow = Math.floor(this.enPassantTarget / 8);
-                        const epCol = this.enPassantTarget % 8;
-                        if (row === 4 && Math.abs(col - epCol) === 1 && epRow === 5) {
-                            moves.push({from: index, to: this.enPassantTarget, enPassant: true});
-                        }
-                    }
+                    if (col>0 && index+7<64 && this.colors[index+7]===0) addMove(index+7, {capture:true});
+                    if (col<7 && index+9<64 && this.colors[index+9]===0) addMove(index+9, {capture:true});
                     break;
-                    
-                case '♘': case '♞': // Кони
-                    const knightMoves = [-17, -15, -10, -6, 6, 10, 15, 17];
-                    for (let offset of knightMoves) {
-                        const target = index + offset;
-                        if (target >= 0 && target < 64) {
-                            const tRow = Math.floor(target / 8);
-                            const tCol = target % 8;
-                            if (Math.abs(tRow - row) <= 2 && Math.abs(tCol - col) <= 2) {
-                                if (this.colors[target] !== color) {
-                                    moves.push({from: index, to: target, capture: this.board[target] !== ''});
-                                }
-                            }
-                        }
-                    }
+                case '♘': case '♞':
+                    [-17,-15,-10,-6,6,10,15,17].forEach(offset => {
+                        const to = index+offset;
+                        if (to>=0 && to<64 && Math.abs(Math.floor(to/8)-row)<=2 && Math.abs(to%8-col)<=2
+                            && this.colors[to] !== color)
+                            addMove(to, {capture: !!this.board[to]});
+                    });
                     break;
-                    
-                case '♗': case '♝': // Слоны
-                    for (let d of [-9, -7, 7, 9]) {
-                        for (let i = 1; i < 8; i++) {
-                            const target = index + d * i;
-                            if (target < 0 || target >= 64) break;
-                            const tRow = Math.floor(target / 8);
-                            const tCol = target % 8;
-                            if (Math.abs(tRow - row) !== i || Math.abs(tCol - col) !== i) break;
-                            if (this.board[target] === '') {
-                                moves.push({from: index, to: target});
-                            } else {
-                                if (this.colors[target] !== color) {
-                                    moves.push({from: index, to: target, capture: true});
-                                }
+                case '♗': case '♝':
+                    [-9,-7,7,9].forEach(dir => {
+                        for (let i=1; i<8; i++) {
+                            const to = index + dir*i;
+                            if (to<0||to>=64) break;
+                            const tr = Math.floor(to/8), tc = to%8;
+                            if (Math.abs(tr-row)!==i || Math.abs(tc-col)!==i) break;
+                            if (this.board[to]==='') addMove(to);
+                            else {
+                                if (this.colors[to]!==color) addMove(to, {capture:true});
                                 break;
                             }
                         }
-                    }
+                    });
                     break;
-                    
-                case '♖': case '♜': // Ладьи
-                    for (let d of [-8, 8, -1, 1]) {
-                        for (let i = 1; i < 8; i++) {
-                            const target = index + d * i;
-                            const tRow = Math.floor(target / 8);
-                            const tCol = target % 8;
-                            if (target < 0 || target >= 64) break;
-                            if (d === -1 || d === 1) {
-                                if (tRow !== row) break;
-                            }
-                            if (this.board[target] === '') {
-                                moves.push({from: index, to: target});
-                            } else {
-                                if (this.colors[target] !== color) {
-                                    moves.push({from: index, to: target, capture: true});
-                                }
+                case '♖': case '♜':
+                    [-8,8,-1,1].forEach(dir => {
+                        for (let i=1; i<8; i++) {
+                            const to = index + dir*i;
+                            if (to<0||to>=64) break;
+                            if ((dir===-1||dir===1) && Math.floor(to/8)!==row) break;
+                            if (this.board[to]==='') addMove(to);
+                            else {
+                                if (this.colors[to]!==color) addMove(to, {capture:true});
                                 break;
                             }
                         }
-                    }
+                    });
                     break;
-                    
-                case '♕': case '♛': // Ферзи
-                    for (let d of [-9, -7, 7, 9, -8, 8, -1, 1]) {
-                        for (let i = 1; i < 8; i++) {
-                            const target = index + d * i;
-                            const tRow = Math.floor(target / 8);
-                            const tCol = target % 8;
-                            if (target < 0 || target >= 64) break;
-                            if ([-1, 1].indexOf(d) >= 0 && tRow !== row) break;
-                            if ([-9, -7, 7, 9].indexOf(d) >= 0) {
-                                if (Math.abs(tRow - row) !== i || Math.abs(tCol - col) !== i) break;
-                            }
-                            if (this.board[target] === '') {
-                                moves.push({from: index, to: target});
-                            } else {
-                                if (this.colors[target] !== color) {
-                                    moves.push({from: index, to: target, capture: true});
-                                }
+                case '♕': case '♛':
+                    [-9,-7,7,9,-8,8,-1,1].forEach(dir => {
+                        for (let i=1; i<8; i++) {
+                            const to = index + dir*i;
+                            if (to<0||to>=64) break;
+                            const tr = Math.floor(to/8), tc = to%8;
+                            if ((dir===-1||dir===1) && tr!==row) break;
+                            if ([-9,-7,7,9].includes(dir) && (Math.abs(tr-row)!==i || Math.abs(tc-col)!==i)) break;
+                            if (this.board[to]==='') addMove(to);
+                            else {
+                                if (this.colors[to]!==color) addMove(to, {capture:true});
                                 break;
                             }
                         }
-                    }
+                    });
                     break;
-                    
-                case '♔': case '♚': // Короли
-                    const kingMoves = [-9, -8, -7, -1, 1, 7, 8, 9];
-                    for (let offset of kingMoves) {
-                        const target = index + offset;
-                        if (target >= 0 && target < 64) {
-                            const tRow = Math.floor(target / 8);
-                            const tCol = target % 8;
-                            if (Math.abs(tRow - row) <= 1 && Math.abs(tCol - col) <= 1) {
-                                if (this.colors[target] !== color) {
-                                    moves.push({from: index, to: target, capture: this.board[target] !== ''});
-                                }
-                            }
-                        }
-                    }
+                case '♔': case '♚':
+                    [-9,-8,-7,-1,1,7,8,9].forEach(offset => {
+                        const to = index+offset;
+                        if (to>=0 && to<64 && Math.abs(Math.floor(to/8)-row)<=1 && Math.abs(to%8-col)<=1
+                            && this.colors[to]!==color)
+                            addMove(to, {capture: !!this.board[to]});
+                    });
                     // Рокировка
                     if (!this.kingMoved[color]) {
-                        if (!this.rookMoved[color * 2] && this.board[index-3] === '' && this.board[index-2] === '' && this.board[index-1] === '') {
-                            if (!this.isSquareAttacked(index-1, 1-color) && !this.isSquareAttacked(index-2, 1-color)) {
-                                moves.push({from: index, to: index-2, castle: 'queenside'});
-                            }
-                        }
-                        if (!this.rookMoved[color * 2 + 1] && this.board[index+1] === '' && this.board[index+2] === '') {
-                            if (!this.isSquareAttacked(index+1, 1-color) && !this.isSquareAttacked(index+2, 1-color)) {
-                                moves.push({from: index, to: index+2, castle: 'kingside'});
-                            }
-                        }
+                        const rowBase = color===0 ? 7 : 0;
+                        if (!this.rookMoved[color*2] && this.board[index-3]==='' && this.board[index-2]==='' && this.board[index-1]==='')
+                            addMove(index-2, {castle:'queenside'});
+                        if (!this.rookMoved[color*2+1] && this.board[index+1]==='' && this.board[index+2]==='')
+                            addMove(index+2, {castle:'kingside'});
                     }
                     break;
             }
-            
+
+            // Фильтрация ходов, оставляющих короля под шахом
             return moves.filter(move => {
-                this.makeTempMove(move);
-                const inCheck = this.isInCheck(color);
-                this.unmakeTempMove(move);
-                return !inCheck;
+                const newBoard = [...this.board];
+                const newColors = [...this.colors];
+                this.makeMoveOnBoard(newBoard, newColors, move);
+                return !this.isInCheck(color, newBoard, newColors);
             });
         }
-        
-        isSquareAttacked(index, attackerColor) {
-            for (let i = 0; i < 64; i++) {
-                if (this.colors[i] === attackerColor) {
-                    const piece = this.board[i];
-                    if (!piece) continue;
-                    const moves = this.getRawMoves(i, piece);
-                    if (moves.some(m => m.to === index)) return true;
+
+        // Вспомогательная: выполнить ход на переданных массивах (не меняя this)
+        makeMoveOnBoard(board, colors, move) {
+            const piece = board[move.from];
+            board[move.to] = piece;
+            board[move.from] = '';
+            colors[move.to] = colors[move.from];
+            colors[move.from] = 0;
+            if (move.castle === 'kingside') {
+                const rookFrom = move.from + 3;
+                board[move.from+1] = board[rookFrom];
+                board[rookFrom] = '';
+                colors[move.from+1] = colors[rookFrom];
+                colors[rookFrom] = 0;
+            } else if (move.castle === 'queenside') {
+                const rookFrom = move.from - 4;
+                board[move.from-1] = board[rookFrom];
+                board[rookFrom] = '';
+                colors[move.from-1] = colors[rookFrom];
+                colors[rookFrom] = 0;
+            }
+            if (move.enPassant) {
+                const captured = move.to + (colors[move.from]===0 ? 8 : -8);
+                board[captured] = '';
+                colors[captured] = 0;
+            }
+        }
+
+        isInCheck(color, board=this.board, colors=this.colors) {
+            let kingIdx = -1;
+            const king = color===0 ? '♔' : '♚';
+            for (let i=0; i<64; i++) {
+                if (board[i] === king) { kingIdx = i; break; }
+            }
+            if (kingIdx === -1) return true;
+            return this.isSquareAttacked(kingIdx, 1-color, board, colors);
+        }
+
+        isSquareAttacked(index, attackerColor, board=this.board, colors=this.colors) {
+            const row = Math.floor(index/8), col = index%8;
+            // Логика атаки пешками
+            if (attackerColor === 0) {
+                if (index+9<64 && col<7 && board[index+9]==='♙') return true;
+                if (index+7<64 && col>0 && board[index+7]==='♙') return true;
+            } else {
+                if (index-9>=0 && col>0 && board[index-9]==='♟') return true;
+                if (index-7>=0 && col<7 && board[index-7]==='♟') return true;
+            }
+            // Конём
+            const knightMoves = [-17,-15,-10,-6,6,10,15,17];
+            const knight = attackerColor===0 ? '♘' : '♞';
+            for (let offset of knightMoves) {
+                const to = index+offset;
+                if (to>=0 && to<64 && board[to]===knight && Math.abs(Math.floor(to/8)-row)<=2) return true;
+            }
+            // Скользящие фигуры
+            const dirs = { '♗':[-9,-7,7,9], '♝':[-9,-7,7,9], '♖':[-8,8,-1,1], '♜':[-8,8,-1,1], '♕':[-9,-7,7,9,-8,8,-1,1], '♛':[-9,-7,7,9,-8,8,-1,1] };
+            for (let pieceChar in dirs) {
+                if ((attackerColor===0 && pieceChar.charCodeAt(0) < 1000) || (attackerColor===1 && pieceChar.charCodeAt(0) > 1000)) {
+                    for (let dir of dirs[pieceChar]) {
+                        for (let i=1; i<8; i++) {
+                            const to = index+dir*i;
+                            if (to<0||to>=64) break;
+                            const tr=Math.floor(to/8), tc=to%8;
+                            if ((dir===-1||dir===1) && tr!==row) break;
+                            if ([-9,-7,7,9].includes(dir) && (Math.abs(tr-row)!==i||Math.abs(tc-col)!==i)) break;
+                            if (board[to]==='') continue;
+                            if (board[to]===pieceChar) return true;
+                            break;
+                        }
+                    }
                 }
+            }
+            // Король
+            const kingChar = attackerColor===0 ? '♔' : '♚';
+            const kingMoves = [-9,-8,-7,-1,1,7,8,9];
+            for (let offset of kingMoves) {
+                const to = index+offset;
+                if (to>=0 && to<64 && Math.abs(Math.floor(to/8)-row)<=1 && board[to]===kingChar) return true;
             }
             return false;
         }
-        
-        getRawMoves(index, piece) {
-            const moves = [];
-            const row = Math.floor(index / 8);
-            const col = index % 8;
-            
-            if (!piece) return moves;
-            
-            switch(piece) {
-                case '♙':
-                    if (row > 0 && col > 0) moves.push({to: index-9});
-                    if (row > 0 && col < 7) moves.push({to: index-7});
-                    break;
-                case '♟':
-                    if (row < 7 && col > 0) moves.push({to: index+7});
-                    if (row < 7 && col < 7) moves.push({to: index+9});
-                    break;
-                case '♘': case '♞':
-                    const ks = [-17, -15, -10, -6, 6, 10, 15, 17];
-                    for (let o of ks) {
-                        const t = index + o;
-                        if (t >= 0 && t < 64 && Math.abs(Math.floor(t/8)-row) <= 2) moves.push({to: t});
-                    }
-                    break;
-                case '♗': case '♝':
-                    for (let d of [-9, -7, 7, 9]) {
-                        for (let i = 1; i < 8; i++) {
-                            const t = index + d * i;
-                            if (t < 0 || t >= 64) break;
-                            const tr = Math.floor(t/8), tc = t%8;
-                            if (Math.abs(tr-row) !== i || Math.abs(tc-col) !== i) break;
-                            moves.push({to: t});
-                            if (this.board[t] !== '') break;
-                        }
-                    }
-                    break;
-                case '♖': case '♜':
-                    for (let d of [-8, 8, -1, 1]) {
-                        for (let i = 1; i < 8; i++) {
-                            const t = index + d * i;
-                            if (t < 0 || t >= 64) break;
-                            const tr = Math.floor(t/8);
-                            if ((d === -1 || d === 1) && tr !== row) break;
-                            moves.push({to: t});
-                            if (this.board[t] !== '') break;
-                        }
-                    }
-                    break;
-                case '♕': case '♛':
-                    for (let d of [-9, -7, 7, 9, -8, 8, -1, 1]) {
-                        for (let i = 1; i < 8; i++) {
-                            const t = index + d * i;
-                            if (t < 0 || t >= 64) break;
-                            const tr = Math.floor(t/8), tc = t%8;
-                            if ([-1,1].indexOf(d) >= 0 && tr !== row) break;
-                            if ([-9,-7,7,9].indexOf(d) >= 0 && (Math.abs(tr-row) !== i || Math.abs(tc-col) !== i)) break;
-                            moves.push({to: t});
-                            if (this.board[t] !== '') break;
-                        }
-                    }
-                    break;
-                case '♔': case '♚':
-                    for (let o of [-9,-8,-7,-1,1,7,8,9]) {
-                        const t = index + o;
-                        if (t >= 0 && t < 64 && Math.abs(Math.floor(t/8)-row) <= 1) moves.push({to: t});
-                    }
-                    break;
-            }
-            return moves;
-        }
-        
-        isInCheck(color) {
-            let kingIndex = -1;
-            const king = color === 0 ? '♔' : '♚';
-            for (let i = 0; i < 64; i++) {
-                if (this.board[i] === king) {
-                    kingIndex = i;
-                    break;
-                }
-            }
-            if (kingIndex === -1) return true;
-            return this.isSquareAttacked(kingIndex, 1 - color);
-        }
-        
+
         makeMove(move) {
-            const piece = this.board[move.from];
-            const capturedPiece = this.board[move.to];
-            
-            // Сохраняем состояние для отмены
             const state = {
-                board: [...this.board],
-                colors: [...this.colors],
-                kingMoved: [...this.kingMoved],
-                rookMoved: [...this.rookMoved],
-                enPassantTarget: this.enPassantTarget,
-                fiftyMoveCounter: this.fiftyMoveCounter,
-                positionHistory: {...this.positionHistory},
-                capturedPiece: capturedPiece,
-                move: move
+                board: [...this.board], colors: [...this.colors],
+                kingMoved: [...this.kingMoved], rookMoved: [...this.rookMoved],
+                enPassantTarget: this.enPassantTarget, fiftyMoveCounter: this.fiftyMoveCounter,
+                positionHistory: {...this.positionHistory}
             };
-            
             // Выполняем ход
-            this.board[move.to] = piece;
-            this.board[move.from] = '';
-            this.colors[move.to] = this.colors[move.from];
-            this.colors[move.from] = 0;
-            
-            // Рокировка
-            if (move.castle) {
-                if (move.castle === 'kingside') {
-                    const rookFrom = move.from + 3;
-                    const rookTo = move.from + 1;
-                    this.board[rookTo] = this.board[rookFrom];
-                    this.board[rookFrom] = '';
-                    this.colors[rookTo] = this.colors[rookFrom];
-                    this.colors[rookFrom] = 0;
-                } else if (move.castle === 'queenside') {
-                    const rookFrom = move.from - 4;
-                    const rookTo = move.from - 1;
-                    this.board[rookTo] = this.board[rookFrom];
-                    this.board[rookFrom] = '';
-                    this.colors[rookTo] = this.colors[rookFrom];
-                    this.colors[rookFrom] = 0;
-                }
+            this.makeMoveOnBoard(this.board, this.colors, move);
+            // Обновляем флаги рокировки
+            if (this.board[move.to]==='♔') this.kingMoved[0]=true;
+            if (this.board[move.to]==='♚') this.kingMoved[1]=true;
+            if (this.board[move.to]==='♖') {
+                if (move.from===56) this.rookMoved[0]=true;
+                else if (move.from===63) this.rookMoved[1]=true;
             }
-            
-            // Взятие на проходе
-            if (move.enPassant) {
-                const capturedIndex = this.currentPlayer === 0 ? move.to + 8 : move.to - 8;
-                state.capturedPiece = this.board[capturedIndex];
-                this.board[capturedIndex] = '';
-                this.colors[capturedIndex] = 0;
+            if (this.board[move.to]==='♜') {
+                if (move.from===0) this.rookMoved[2]=true;
+                else if (move.from===7) this.rookMoved[3]=true;
             }
-            
-            // Обновление счётчика 50 ходов
-            if (piece === '♙' || piece === '♟' || capturedPiece) {
-                this.fiftyMoveCounter = 0;
-            } else {
-                this.fiftyMoveCounter++;
-            }
-            
-            // Обновление en passant
+            // en passant
             this.enPassantTarget = -1;
-            if ((piece === '♙' || piece === '♟') && Math.abs(move.to - move.from) === 16) {
-                this.enPassantTarget = (move.from + move.to) / 2;
-            }
-            
-            // Обновление флагов рокировки
-            if (piece === '♔') this.kingMoved[0] = true;
-            if (piece === '♚') this.kingMoved[1] = true;
-            if (piece === '♖') {
-                if (move.from === 56) this.rookMoved[0] = true;
-                if (move.from === 63) this.rookMoved[1] = true;
-            }
-            if (piece === '♜') {
-                if (move.from === 0) this.rookMoved[2] = true;
-                if (move.from === 7) this.rookMoved[3] = true;
-            }
-            
-            // Сохраняем позицию
-            const fen = this.getFEN().split(' ')[0];
-            this.positionHistory[fen] = (this.positionHistory[fen] || 0) + 1;
-            
-            // Переключение хода
-            this.currentPlayer = 1 - this.currentPlayer;
-            
-            // Проверка на шах/мат/пат
-            if (this.isCheckmate()) {
-                this.gameOver = true;
-                this.result = this.currentPlayer === 0 ? '1-0' : '0-1';
-            } else if (this.isStalemate()) {
-                this.gameOver = true;
-                this.result = '1/2-1/2';
-            }
-            
+            const piece = this.board[move.to];
+            if ((piece==='♙'||piece==='♟') && Math.abs(move.to-move.from)===16)
+                this.enPassantTarget = (move.from + move.to)>>1;
+            // Счетчик 50 ходов
+            if (piece==='♙'||piece==='♟' || state.board[move.to]!=='') this.fiftyMoveCounter=0;
+            else this.fiftyMoveCounter++;
+            // Хеш позиции
+            const fenPart = this.getFEN().split(' ')[0];
+            this.positionHistory[fenPart] = (this.positionHistory[fenPart] || 0) + 1;
+            this.currentPlayer = 1-this.currentPlayer;
+            // Проверка окончания
+            if (this.isCheckmate()) { this.gameOver=true; this.result = this.currentPlayer===0?'1-0':'0-1'; }
+            else if (this.isStalemate()) { this.gameOver=true; this.result='1/2-1/2'; }
             this.moveHistory.push(state);
             return true;
         }
-        
-        makeTempMove(move) {
-            this.board[move.to] = this.board[move.from];
-            this.board[move.from] = '';
-            this.colors[move.to] = this.colors[move.from];
-            this.colors[move.from] = 0;
-        }
-        
-        unmakeTempMove(move) {
-            this.board[move.from] = this.board[move.to];
-            this.board[move.to] = this.tempCaptured || '';
-            this.colors[move.from] = this.colors[move.to];
-            this.colors[move.to] = 0;
-        }
-        
+
         undoMove() {
-            if (this.moveHistory.length === 0) return false;
-            
-            const state = this.moveHistory.pop();
-            this.board = state.board;
-            this.colors = state.colors;
-            this.kingMoved = state.kingMoved;
-            this.rookMoved = state.rookMoved;
-            this.enPassantTarget = state.enPassantTarget;
-            this.fiftyMoveCounter = state.fiftyMoveCounter;
-            this.positionHistory = state.positionHistory;
-            this.currentPlayer = 1 - this.currentPlayer;
-            this.gameOver = false;
-            this.result = '';
-            
+            if (this.moveHistory.length===0) return false;
+            const s = this.moveHistory.pop();
+            this.board = s.board; this.colors = s.colors;
+            this.kingMoved = s.kingMoved; this.rookMoved = s.rookMoved;
+            this.enPassantTarget = s.enPassantTarget; this.fiftyMoveCounter = s.fiftyMoveCounter;
+            this.positionHistory = s.positionHistory;
+            this.currentPlayer = 1-this.currentPlayer;
+            this.gameOver = false; this.result = '';
             return true;
         }
-        
-        isCheckmate() {
-            if (!this.isInCheck(this.currentPlayer)) return false;
-            return this.getAllValidMoves().length === 0;
-        }
-        
-        isStalemate() {
-            if (this.isInCheck(this.currentPlayer)) return false;
-            return this.getAllValidMoves().length === 0;
-        }
-        
+
+        isCheckmate() { return this.isInCheck(this.currentPlayer) && this.getAllValidMoves().length===0; }
+        isStalemate() { return !this.isInCheck(this.currentPlayer) && this.getAllValidMoves().length===0; }
+
         getAllValidMoves() {
             const moves = [];
-            for (let i = 0; i < 64; i++) {
-                if (this.colors[i] === this.currentPlayer && this.board[i]) {
+            for (let i=0; i<64; i++) {
+                if (this.colors[i]===this.currentPlayer && this.board[i])
                     moves.push(...this.getValidMoves(i));
-                }
             }
             return moves;
         }
-        
+
         evaluate() {
             let score = 0;
-            
-            // Материальная оценка
-            for (let i = 0; i < 64; i++) {
+            for (let i=0; i<64; i++) {
                 const piece = this.board[i];
                 if (!piece) continue;
-                let value = PIECE_VALUES[piece] || 0;
-                
-                // Позиционные бонусы для пешек
-                if (piece === '♙') value += PAWN_TABLE[i];
-                if (piece === '♟') value -= PAWN_TABLE[63 - i];
-                
-                score += this.colors[i] === 1 ? -value : value;
+                let val = PIECE_VALUES[piece] || 0;
+                if (piece==='♙') val += PAWN_TABLE[i];
+                else if (piece==='♟') val -= PAWN_TABLE[63-i];
+                score += this.colors[i]===1 ? -val : val;
             }
-            
             return score;
         }
-        
-        alphaBeta(depth, alpha, beta, isMaximizing) {
-            if (depth === 0) {
-                return this.evaluate();
-            }
-            
+
+        alphaBeta(depth, alpha, beta, maximizing) {
+            if (depth===0) return this.evaluate();
             const moves = this.getAllValidMoves();
-            
-            if (moves.length === 0) {
-                if (this.isInCheck(this.currentPlayer)) {
-                    return isMaximizing ? -99999 : 99999;
-                }
-                return 0;
-            }
-            
-            if (isMaximizing) {
+            if (moves.length===0) return this.isInCheck(this.currentPlayer) ? (maximizing ? -99999 : 99999) : 0;
+            if (maximizing) {
                 let maxEval = -Infinity;
                 for (let move of moves) {
-                    const state = this.makeAndSaveState(move);
-                    const evalScore = this.alphaBeta(depth - 1, alpha, beta, false);
-                    this.restoreState(state);
-                    maxEval = Math.max(maxEval, evalScore);
-                    alpha = Math.max(alpha, evalScore);
+                    const s = this.makeCopyState();
+                    this.makeMove(move);
+                    const e = this.alphaBeta(depth-1, alpha, beta, false);
+                    this.restoreState(s);
+                    maxEval = Math.max(maxEval, e);
+                    alpha = Math.max(alpha, e);
                     if (beta <= alpha) break;
                 }
                 return maxEval;
             } else {
                 let minEval = Infinity;
                 for (let move of moves) {
-                    const state = this.makeAndSaveState(move);
-                    const evalScore = this.alphaBeta(depth - 1, alpha, beta, true);
-                    this.restoreState(state);
-                    minEval = Math.min(minEval, evalScore);
-                    beta = Math.min(beta, evalScore);
+                    const s = this.makeCopyState();
+                    this.makeMove(move);
+                    const e = this.alphaBeta(depth-1, alpha, beta, true);
+                    this.restoreState(s);
+                    minEval = Math.min(minEval, e);
+                    beta = Math.min(beta, e);
                     if (beta <= alpha) break;
                 }
                 return minEval;
             }
         }
-        
-        makeAndSaveState(move) {
-            const state = {
-                board: [...this.board],
-                colors: [...this.colors],
-                currentPlayer: this.currentPlayer,
-                kingMoved: [...this.kingMoved],
-                rookMoved: [...this.rookMoved],
-                enPassantTarget: this.enPassantTarget,
-                fiftyMoveCounter: this.fiftyMoveCounter,
-                positionHistory: {...this.positionHistory}
+
+        makeCopyState() {
+            return {
+                board: [...this.board], colors: [...this.colors],
+                currentPlayer: this.currentPlayer, kingMoved: [...this.kingMoved],
+                rookMoved: [...this.rookMoved], enPassantTarget: this.enPassantTarget,
+                fiftyMoveCounter: this.fiftyMoveCounter, positionHistory: {...this.positionHistory}
             };
-            
-            this.makeSimpleMove(move);
-            return state;
         }
-        
-        makeSimpleMove(move) {
-            this.board[move.to] = this.board[move.from];
-            this.board[move.from] = '';
-            this.colors[move.to] = this.colors[move.from];
-            this.colors[move.from] = 0;
-            this.currentPlayer = 1 - this.currentPlayer;
+        restoreState(s) {
+            this.board = s.board; this.colors = s.colors;
+            this.currentPlayer = s.currentPlayer; this.kingMoved = s.kingMoved;
+            this.rookMoved = s.rookMoved; this.enPassantTarget = s.enPassantTarget;
+            this.fiftyMoveCounter = s.fiftyMoveCounter; this.positionHistory = s.positionHistory;
         }
-        
-        restoreState(state) {
-            this.board = state.board;
-            this.colors = state.colors;
-            this.currentPlayer = state.currentPlayer;
-            this.kingMoved = state.kingMoved;
-            this.rookMoved = state.rookMoved;
-            this.enPassantTarget = state.enPassantTarget;
-            this.fiftyMoveCounter = state.fiftyMoveCounter;
-            this.positionHistory = state.positionHistory;
-        }
-        
+
         findBestMove(depth) {
             const moves = this.getAllValidMoves();
-            if (moves.length === 0) return null;
-            
-            let bestMove = moves[0];
-            let bestEval = this.currentPlayer === 0 ? -Infinity : Infinity;
-            
+            if (moves.length===0) return null;
+            let best = moves[0];
+            let bestVal = this.currentPlayer===0 ? -Infinity : Infinity;
             for (let move of moves) {
-                const state = this.makeAndSaveState(move);
-                const evalScore = this.alphaBeta(depth - 1, -Infinity, Infinity, this.currentPlayer !== 0);
-                this.restoreState(state);
-                
-                if (this.currentPlayer === 0) {
-                    if (evalScore > bestEval) {
-                        bestEval = evalScore;
-                        bestMove = move;
-                    }
-                } else {
-                    if (evalScore < bestEval) {
-                        bestEval = evalScore;
-                        bestMove = move;
-                    }
-                }
+                const s = this.makeCopyState();
+                this.makeMove(move);
+                const val = this.alphaBeta(depth-1, -Infinity, Infinity, this.currentPlayer!==0);
+                this.restoreState(s);
+                if (this.currentPlayer===0 && val > bestVal) { bestVal=val; best=move; }
+                else if (this.currentPlayer===1 && val < bestVal) { bestVal=val; best=move; }
             }
-            
-            return bestMove;
+            return best;
         }
-        
+
         getFEN() {
             let fen = '';
-            for (let row = 0; row < 8; row++) {
-                let emptyCount = 0;
-                for (let col = 0; col < 8; col++) {
-                    const index = row * 8 + col;
-                    const piece = this.board[index];
-                    if (piece) {
-                        if (emptyCount > 0) {
-                            fen += emptyCount;
-                            emptyCount = 0;
-                        }
-                        fen += piece;
-                    } else {
-                        emptyCount++;
-                    }
+            for (let r=0; r<8; r++) {
+                let empty = 0;
+                for (let c=0; c<8; c++) {
+                    const idx = r*8+c;
+                    if (this.board[idx]) {
+                        if (empty>0) { fen+=empty; empty=0; }
+                        fen+=this.board[idx];
+                    } else empty++;
                 }
-                if (emptyCount > 0) {
-                    fen += emptyCount;
-                }
-                if (row < 7) fen += '/';
+                if (empty>0) fen+=empty;
+                if (r<7) fen+='/';
             }
-            
-            fen += this.currentPlayer === 0 ? ' w ' : ' b ';
-            
+            fen += this.currentPlayer===0 ? ' w ' : ' b ';
             let castling = '';
             if (!this.kingMoved[0]) {
-                if (!this.rookMoved[1]) castling += 'K';
-                if (!this.rookMoved[0]) castling += 'Q';
+                if (!this.rookMoved[1]) castling+='K';
+                if (!this.rookMoved[0]) castling+='Q';
             }
             if (!this.kingMoved[1]) {
-                if (!this.rookMoved[3]) castling += 'k';
-                if (!this.rookMoved[2]) castling += 'q';
+                if (!this.rookMoved[3]) castling+='k';
+                if (!this.rookMoved[2]) castling+='q';
             }
-            fen += castling || '-';
-            fen += ' ';
-            fen += this.enPassantTarget >= 0 ? this.indexToAlgebraic(this.enPassantTarget) : '-';
+            fen += castling||'-';
+            fen += ' ' + (this.enPassantTarget>=0 ? this.indexToAlgebraic(this.enPassantTarget) : '-');
             fen += ' 0 1';
-            
             return fen;
         }
-        
-        indexToAlgebraic(index) {
-            const col = index % 8;
-            const row = 7 - Math.floor(index / 8);
-            return String.fromCharCode(97 + col) + (row + 1);
-        }
+
+        indexToAlgebraic(i) { return String.fromCharCode(97+i%8)+(7-Math.floor(i/8)+1); }
     }
-    
+
     return ChessEngine;
 })();
 
-window.createEngine = function() {
-    return new window.ChessEngine();
-};
+window.createEngine = function() { return new window.ChessEngine(); };
