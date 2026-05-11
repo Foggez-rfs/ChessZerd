@@ -1,0 +1,3 @@
+window.PawnHash = (function() {
+  return {};
+})();

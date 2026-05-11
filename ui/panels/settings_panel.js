@@ -1,0 +1,1 @@
+window.SettingsPanel = (function() { return {}; })();

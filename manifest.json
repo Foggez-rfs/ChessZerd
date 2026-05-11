@@ -1,0 +1,19 @@
+{
+  "name": "Chesszerd AI",
+  "short_name": "Chesszerd",
+  "description": "Автономный шахматный ИИ с нейросетью и личностью Сосуке Айзена",
+  "start_url": "/www/index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a1a2e",
+  "theme_color": "#c8a96e",
+  "icons": [
+    {
+      "src": "/assets/img/logo.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ],
+  "lang": "ru",
+  "categories": ["games", "education"]
+}

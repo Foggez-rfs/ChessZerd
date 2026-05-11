@@ -1,0 +1,1 @@
+window.RuTranslations = window.TranslationsRU || {};

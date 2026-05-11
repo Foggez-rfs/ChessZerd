@@ -1,0 +1,22 @@
+window.TranslationsRU = {
+  newGame: "Новая игра",
+  undo: "Отменить",
+  flip: "Перевернуть",
+  save: "Сохранить",
+  game: "Игра",
+  profile: "Профиль",
+  style: "Стиль",
+  playerName: "Имя игрока",
+  elo: "ELO",
+  wins: "Победы",
+  losses: "Поражения",
+  draws: "Ничьи",
+  loginGoogle: "Войти через Google",
+  importChesscom: "Импорт с Chess.com",
+  yourMove: "Ваш ход",
+  aiMove: "Ход Сосуке Айзена...",
+  draw: "Ничья!",
+  youWin: "Вы победили!",
+  aiWin: "Айзен победил!",
+  welcome: "Добро пожаловать в Chesszerd"
+};

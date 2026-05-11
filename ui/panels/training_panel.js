@@ -1,0 +1,1 @@
+window.TrainingPanel = (function() { return {}; })();

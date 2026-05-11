@@ -1,0 +1,1 @@
+window.AnalysisPanel = (function() { return {}; })();

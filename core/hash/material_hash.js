@@ -1,0 +1,3 @@
+window.MaterialHash = (function() {
+  return {};
+})();

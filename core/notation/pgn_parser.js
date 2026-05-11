@@ -1,0 +1,3 @@
+window.PGNParser = (function() {
+  return {};
+})();

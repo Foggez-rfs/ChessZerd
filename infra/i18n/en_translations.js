@@ -1,0 +1,1 @@
+window.EnTranslations = window.TranslationsEN || {};

@@ -1,0 +1,1 @@
+window.HistoryPanel = (function() { return {}; })();

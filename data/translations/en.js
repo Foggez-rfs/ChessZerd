@@ -1,0 +1,22 @@
+window.TranslationsEN = {
+  newGame: "New Game",
+  undo: "Undo",
+  flip: "Flip",
+  save: "Save",
+  game: "Game",
+  profile: "Profile",
+  style: "Style",
+  playerName: "Player Name",
+  elo: "ELO",
+  wins: "Wins",
+  losses: "Losses",
+  draws: "Draws",
+  loginGoogle: "Login with Google",
+  importChesscom: "Import from Chess.com",
+  yourMove: "Your move",
+  aiMove: "Sosuke Aizen's move...",
+  draw: "Draw!",
+  youWin: "You won!",
+  aiWin: "Aizen won!",
+  welcome: "Welcome to Chesszerd"
+};
